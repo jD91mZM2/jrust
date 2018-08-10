@@ -94,19 +94,22 @@ macro_rules! java_inner {
     (stmt($class:ident) { $kind:ident $name:ident = $value:expr; $($remaining:tt)* }) => {
         java_inner!(stmt($class) { $kind $name = ($value); $($remaining)* });
     };
-    (stmt($class:ident) { ($kind:expr) = ($($val:tt)*); $($remaining:tt)* }) => {
-        $kind = java_inner!(expr($class) { $($val)* });
+    (stmt($class:ident) { ($name:expr) = ($($val:tt)*); $($remaining:tt)* }) => {
+        $name = java_inner!(expr($class) { $($val)* });
         java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt($class:ident) { ($kind:expr) = $val:expr; $($remaining:tt)* }) => {
-        java_inner!(stmt($class) { ($kind) = ($val); });
+    (stmt($class:ident) { ($name:expr) = $val:expr; $($remaining:tt)* }) => {
+        java_inner!(stmt($class) { ($name) = ($val); $($remaining)* });
     };
-    (stmt($class:ident) { ($kind:expr) += $val:expr; $($remaining:tt)* }) => {
-        $kind += $val;
+    (stmt($class:ident) { $name:ident = $val:expr; $($remaining:tt)* }) => {
+        java_inner!(stmt($class) { ($name) = ($val); $($remaining)* });
+    };
+    (stmt($class:ident) { ($name:expr) += $val:expr; $($remaining:tt)* }) => {
+        $name += $val;
         java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt($class:ident) { ($kind:expr) -= $val:expr; $($remaining:tt)* }) => {
-        $kind -= java_inner!(expr($class) { $val });
+    (stmt($class:ident) { ($name:expr) -= $val:expr; $($remaining:tt)* }) => {
+        $name -= java_inner!(expr($class) { $val });
         java_inner!(stmt($class) { $($remaining)* });
     };
     (stmt($class:ident) { $name:ident++; $($remaining:tt)* }) => {
@@ -128,6 +131,12 @@ macro_rules! java_inner {
     };
     (stmt($class:ident) { break; $($remaining:tt)* }) => {
         break;
+        // Useless, but'll generate the nice "unused code" warning that
+        // actually applies here and isn't caused by the macro itself.
+        java_inner!(stmt($class) { $($remaining)* });
+    };
+    (stmt($class:ident) { continue; $($remaining:tt)* }) => {
+        continue;
         // Useless, but'll generate the nice "unused code" warning that
         // actually applies here and isn't caused by the macro itself.
         java_inner!(stmt($class) { $($remaining)* });
@@ -187,6 +196,14 @@ macro_rules! java_inner {
         }
         java_inner!(stmt($class) { $($remaining)* });
     };
+    (stmt($class:ident) { while ($($cond:tt)*) {
+        $($inner:tt)*
+    } $($remaining:tt)* }) => {
+        while java_inner!(expr($class) { $($cond)* }) {
+            java_inner!(stmt($class) { $($inner)* });
+        }
+        java_inner!(stmt($class) { $($remaining)* });
+    };
     // Handle these last because they could be ambigious
     (stmt($class:ident) { $val:ident.$fn:ident($(($($var:tt)*)),*); $($remaining:tt)* }) => {
         $val::$fn($(java_inner!(expr($class) { $($var)* })),*);
@@ -214,6 +231,11 @@ macro_rules! java_inner {
         use jrust::*;
         java_inner!(expr($class) { $($var1)* })
             $(.add(java_inner!(expr($class) { $($var2)* })))*
+    }};
+    (expr($class:ident) { $var:ident++ }) => {{
+        let old = $var;
+        $var += 1;
+        old
     }};
     (expr($class:ident) { $var1:ident $op:tt $var2:ident }) => {{
         java_inner!(expr($class) { ($var1) $op ($var2) })
