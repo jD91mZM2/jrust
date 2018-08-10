@@ -1,5 +1,6 @@
 #[macro_export]
 macro_rules! java_inner {
+    (toplevel {}) => {};
     (toplevel { package $name:ident; $($remaining:tt)* }) => {
         java_inner!(toplevel { $($remaining)* });
     };
@@ -23,8 +24,8 @@ macro_rules! java_inner {
             $($inner)*
         } });
     };
-    (toplevel {}) => {};
 
+    (class($name:ident) {}) => {};
     (class($name:ident) { public static void main(String[] $args:ident) {
         $($inner:tt)*
     } $($remaining:tt)* }) => {
@@ -61,8 +62,8 @@ macro_rules! java_inner {
         }
         java_inner!(class($name) { $($remaining)* });
     };
-    (class($name:ident) {}) => {};
 
+    (stmt {}) => {};
     (stmt { System.out.println($($out:tt)*); $($remaining:tt)* }) => {
         println!("{}", java_inner!(expr { $($out)* }));
         java_inner!(stmt { $($remaining)* });
@@ -106,6 +107,20 @@ macro_rules! java_inner {
         $name -= 1;
         java_inner!(stmt { $($remaining)* });
     };
+    (stmt { $val:ident.$fn:ident($(($($var:tt)*)),*); $($remaining:tt)* }) => {
+        //java_inner!(stmt { ($val).$fn($(($var)),*); $($remaining)* });
+        $val::$fn($(java_inner!(expr { $($var)* })),*);
+        java_inner!(stmt { $($remaining)* });
+    };
+    (stmt { $val:ident.$fn:ident($($var:expr),*); $($remaining:tt)* }) => {
+        java_inner!(stmt { $val.$fn($(($var)),*); $($remaining)* });
+    };
+    (stmt { break; $($remaining:tt)* }) => {
+        break;
+        // Useless, but'll generate the nice "unused code" warning that
+        // actually applies here and isn't caused by the macro itself.
+        java_inner!(stmt { $($remaining)* });
+    };
     (stmt { for (($($pre:tt)*); ($($cond:tt)*); ($($post:tt)*)) {
         $($inner:tt)*
     } $($remaining:tt)* }) => {
@@ -127,15 +142,30 @@ macro_rules! java_inner {
         }
         java_inner!(stmt { $($remaining)* });
     };
-    (stmt { $val:ident.$fn:ident($(($($var:tt)*)),*); $($remaining:tt)* }) => {
-        //java_inner!(stmt { ($val).$fn($(($var)),*); $($remaining)* });
-        $val::$fn($(java_inner!(expr { $($var)* })),*);
+    (stmt { switch($($search:tt)*) {
+        $(case ($match:expr) {
+            $($success:tt)*
+        })*
+        // Should only be one default but rust doesn't have optional macro args yet AFAIK
+        $(default {
+            $($default:tt)*
+        })*
+    } $($remaining:tt)* }) => {
+        loop {
+            let mut fallthrough = false;
+            let search = java_inner!(expr { $($search)* });
+
+            $(
+                if (fallthrough || search == $match) {
+                    fallthrough = true;
+                    java_inner!(stmt { $($success)* });
+                }
+            )*
+
+            $(java_inner!(stmt { $($default)* });)*
+        }
         java_inner!(stmt { $($remaining)* });
     };
-    (stmt { $val:ident.$fn:ident($($var:expr),*); $($remaining:tt)* }) => {
-        java_inner!(stmt { $val.$fn($(($var)),*); $($remaining)* });
-    };
-    (stmt {}) => {};
 
     (expr { $array:ident[$index:expr] }) => {{
         assert!($index >= 0);
