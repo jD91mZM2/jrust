@@ -152,12 +152,14 @@ macro_rules! java_inner {
         })*
     } $($remaining:tt)* }) => {
         loop {
+            #[allow(unused_assignments)]
             let mut fallthrough = false;
             let search = java_inner!(expr { $($search)* });
 
             $(
-                if (fallthrough || search == $match) {
-                    fallthrough = true;
+                if fallthrough || search == $match {
+                    #[allow(unused_assignments)]
+                    { fallthrough = true; }
                     java_inner!(stmt { $($success)* });
                 }
             )*
@@ -173,6 +175,12 @@ macro_rules! java_inner {
     }};
     (expr { $array:ident.length }) => {{
         $array.len() as i32
+    }};
+    (expr { ($($var1:tt)*) $(+ ($($var2:tt)*))+ }) => {{
+        java_inner!(expr { $($var1)* })
+            $(.add(java_inner!(expr { $($var2)* })))*
+        //java_inner!(expr { $($var1)* }).to_string()
+        //    $(+ &java_inner!(expr { $($var2)* }).to_string())+
     }};
     (expr { $var1:ident $op:tt $var2:ident }) => {{
         java_inner!(expr { ($var1) $op ($var2) })
@@ -203,3 +211,45 @@ macro_rules! java {
         java_inner!(toplevel { $($code)* });
     }
 }
+
+use std::fmt::Display;
+use std::ops::Add;
+
+pub trait JavaAdd<T> {
+    type Target;
+
+    fn add(self, other: T) -> Self::Target;
+}
+
+impl<T: Display> JavaAdd<T> for String {
+    type Target = Self;
+
+    fn add(mut self, other: T) -> Self::Target {
+        use std::fmt::Write;
+        write!(self, "{}", other).unwrap();
+        self
+    }
+}
+impl<'a, T: Display> JavaAdd<T> for &'a str {
+    type Target = String;
+
+    fn add(self, other: T) -> Self::Target {
+        JavaAdd::<T>::add(String::from(self), other)
+        //String::from(self)
+        //    .add(other)
+    }
+}
+
+macro_rules! impl_add {
+    ($($primitive:ident),*) => {
+        $(impl<T: Into<i64>> JavaAdd<T> for $primitive {
+            type Target = i64;
+
+            fn add(self, other: T) -> Self::Target {
+                self.into::<i64>() + other.into::<i64>()
+            }
+        })*
+    }
+}
+
+impl_add!(i8, i16, i32, i64);
