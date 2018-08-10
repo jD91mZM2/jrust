@@ -66,10 +66,6 @@ impl Value {
         println!("{}", this.val);
     }
 }
-fn main() {
-    let mut value: &mut Value = &mut Value::new(42);
-    Value::print(value);
-}
 ```
 
 Obviously this isn't perfect. Clean code, speed, etc are things I will strive
