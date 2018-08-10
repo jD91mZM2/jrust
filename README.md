@@ -18,3 +18,62 @@ because *you are fired*."**
  - Cave Johnsson, Portal 2
 
 The whole idea of this project was invented by [@nilset](https://github.com/nilset).
+
+## Example
+
+```Java
+java! {
+    public class Value {
+        int val;
+
+        ---
+
+        public Value(this, int val) {
+            (this.val) = val;
+        }
+
+        public void print(this) {
+            System.out.println((this.val));
+        }
+    }
+}
+```
+
+Note: This is not 1:1 Java, because of some limitations. Emphasis on the
+`this`, which is there to combat Rust's macro hygiene.
+
+Generated rust:
+
+*This can be inspected using [cargo-expand](https://github.com/dtolnay/cargo-expand)*
+
+```Rust
+#[macro_use]
+extern crate jrust;
+
+#[derive(Clone, Debug, Default)]
+pub struct Value {
+    val: i32,
+}
+impl Value {
+    pub fn init(this: &mut Self, val: i32) {
+        this.val = val;
+    }
+    pub fn new(val: i32) -> Self {
+        let mut me = Self::default();
+        Self::init(&mut me, val);
+        me
+    }
+}
+impl Value {
+    pub fn print(this: &mut Self) -> () {
+        println!("{}", this);
+    }
+}
+fn main() {
+    let mut value = Value::new(42);
+    Value::print(&mut value);
+}
+```
+
+Obviously this isn't perfect. Clean code, speed, etc are things I will strive
+for but they are not a priority.
