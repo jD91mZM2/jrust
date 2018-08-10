@@ -1,6 +1,10 @@
 [package]
-name = "jrust"
-version = "0.1.0"
 authors = ["jD91mZM2 <me@krake.one>"]
+description = "A Rust macro that parses Java-like syntax and runs it as a Rust program"
+license-file = "LICENSE"
+name = "jrust"
+readme = "README.md"
+repository = "https://gitlab.com/jD91mZM2/jrust"
+version = "0.1.0"
 
 [dependencies]

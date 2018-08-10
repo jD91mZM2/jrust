@@ -1,4 +1,4 @@
-# jRust
+# jRust ![Crates.io](https://img.shields.io/crates/v/jrust.svg)
 
 *What is this madness?*
 
