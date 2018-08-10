@@ -125,10 +125,7 @@ macro_rules! java_inner {
         $($inner:tt)*
     } $($remaining:tt)* }) => {
         java_inner!(stmt { $($pre)* });
-        loop {
-            if !java_inner!(expr { $($cond)* }) {
-                break;
-            }
+        while java_inner!(expr { $($cond)* }) {
             java_inner!(stmt { $($inner)* });
             java_inner!(stmt { $($post)* });
         }
@@ -165,6 +162,8 @@ macro_rules! java_inner {
             )*
 
             $(java_inner!(stmt { $($default)* });)*
+            #[allow(unreachable_code)]
+            { break; }
         }
         java_inner!(stmt { $($remaining)* });
     };
