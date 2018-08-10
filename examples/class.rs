@@ -21,7 +21,7 @@ java! {
         }
 
         public void add(this, int val) {
-            (this.field) = this.field + val;
+            (this.field) += val;
         }
 
         public static void main(String[] args) {
