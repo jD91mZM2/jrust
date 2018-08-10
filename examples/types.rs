@@ -18,13 +18,13 @@ java! {
 
             if (a < b) {
                 System.out.println("a < b");
-            }
+            };
             if (b < c) {
                 System.out.println("b < c");
-            }
+            };
             if (c < d) {
                 System.out.println("c < d");
-            }
+            };
         }
     }
 }

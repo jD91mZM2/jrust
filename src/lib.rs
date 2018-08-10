@@ -25,121 +25,141 @@ macro_rules! java_inner {
         } });
     };
 
-    (class($name:ident) {}) => {};
-    (class($name:ident) { public static void main(String[] $args:ident) {
+    (class($class:ident) {}) => {};
+    (class($class:ident) { public static void main(String[] $args:ident) {
         $($inner:tt)*
     } $($remaining:tt)* }) => {
         fn main() {
             #[allow(unused_mut, unused_variables)]
             let mut $args: Vec<String> = std::env::args().skip(1).collect();
-            java_inner!(stmt { $($inner)* });
+            java_inner!(stmt($class) { $($inner)* });
         }
-        java_inner!(class($name) { $($remaining)* });
+        java_inner!(class($class) { $($remaining)* });
     };
-    (class($name:ident) { public $constructor:ident($self:ident$(, $kind:ident $var:ident)*) {
+    (class($class:ident) { public $constructor:ident($self:ident$(, $kind:ident $var:ident)*) {
         $($inner:tt)*
     } $($remaining:tt)* }) => {
-        impl $name {
+        impl $class {
             pub fn init($self: &mut Self, $($var: java_inner!(kind $kind)),*) {
-                java_inner!(stmt { $($inner)* });
+                java_inner!(stmt($class) { $($inner)* });
             }
             pub fn new($($var: java_inner!(kind $kind)),*) -> Self {
-                assert_eq!(stringify!($name), stringify!($constructor), "constructor does not share name with class");
+                assert_eq!(stringify!($class), stringify!($constructor), "constructor does not share name with class");
                 let mut me = Self::default();
                 Self::init(&mut me, $($var),*);
                 me
             }
         }
-        java_inner!(class($name) { $($remaining)* });
+        java_inner!(class($class) { $($remaining)* });
     };
-    (class($name:ident) { public $ret:ident $fn:ident($self:ident$(, $kind:ident $var:ident)*) {
+    (class($class:ident) { public $ret:ident $fn:ident($self:ident$(, $kind:ident $var:ident)*) {
         $($inner:tt)*
     } $($remaining:tt)* }) => {
-        impl $name {
+        impl $class {
             pub fn $fn($self: &mut Self, $($var: java_inner!(kind $kind)),*) -> java_inner!(kind $ret) {
-                java_inner!(stmt { $($inner)* });
+                java_inner!(stmt($class) { $($inner)* });
             }
         }
-        java_inner!(class($name) { $($remaining)* });
+        java_inner!(class($class) { $($remaining)* });
+    };
+    (class($class:ident) { public static $ret:ident $fn:ident($($kind:ident $var:ident),*) {
+        $($inner:tt)*
+    } $($remaining:tt)* }) => {
+        impl $class {
+            pub fn $fn($($var: java_inner!(kind $kind)),*) -> java_inner!(kind $ret) {
+                java_inner!(stmt($class) { $($inner)* });
+            }
+        }
+        java_inner!(class($class) { $($remaining)* });
     };
 
-    (stmt {}) => {};
-    (stmt { System.out.println($($out:tt)*); $($remaining:tt)* }) => {
-        println!("{}", java_inner!(expr { $($out)* }));
-        java_inner!(stmt { $($remaining)* });
+    (stmt($class:ident) {}) => {};
+    (stmt($class:ident) { System.out.println($($out:tt)*); $($remaining:tt)* }) => {
+        println!("{}", java_inner!(expr($class) { $($out)* }));
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { System.out.println_debug($($out:tt)*); $($remaining:tt)* }) => {
-        println!("{:?}", java_inner!(expr { $($out)* }));
-        java_inner!(stmt { $($remaining)* });
+    (stmt($class:ident) { System.out.println_debug($($out:tt)*); $($remaining:tt)* }) => {
+        println!("{:?}", java_inner!(expr($class) { $($out)* }));
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { System.out.print($($out:tt)*); $($remaining:tt)* }) => {
-        print!("{}", java_inner!(expr { $($out)* }));
-        java_inner!(stmt { $($remaining)* });
+    (stmt($class:ident) { System.out.print($($out:tt)*); $($remaining:tt)* }) => {
+        print!("{}", java_inner!(expr($class) { $($out)* }));
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { $kind:ident $name:ident = ($($value:tt)*); $($remaining:tt)* }) => {
+    (stmt($class:ident) { $kind:ident $name:ident = ($($value:tt)*); $($remaining:tt)* }) => {
         #[allow(unused_mut)]
-        let mut $name: java_inner!(kind $kind) = java_inner!(expr { $($value)* });
-        java_inner!(stmt { $($remaining)* });
+        let mut $name: java_inner!(kind $kind) = java_inner!(expr($class) { $($value)* });
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { $kind:ident $name:ident = $value:expr; $($remaining:tt)* }) => {
-        java_inner!(stmt { $kind $name = ($value); $($remaining)* });
+    (stmt($class:ident) { $kind:ident $name:ident = $value:expr; $($remaining:tt)* }) => {
+        java_inner!(stmt($class) { $kind $name = ($value); $($remaining)* });
     };
-    (stmt { ($kind:expr) = ($($val:tt)*); $($remaining:tt)* }) => {
-        $kind = java_inner!(expr { $($val)* });
-        java_inner!(stmt { $($remaining)* });
+    (stmt($class:ident) { ($kind:expr) = ($($val:tt)*); $($remaining:tt)* }) => {
+        $kind = java_inner!(expr($class) { $($val)* });
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { ($kind:expr) = $val:expr; $($remaining:tt)* }) => {
-        java_inner!(stmt { ($kind) = ($val); });
+    (stmt($class:ident) { ($kind:expr) = $val:expr; $($remaining:tt)* }) => {
+        java_inner!(stmt($class) { ($kind) = ($val); });
     };
-    (stmt { ($kind:expr) += $val:expr; $($remaining:tt)* }) => {
+    (stmt($class:ident) { ($kind:expr) += $val:expr; $($remaining:tt)* }) => {
         $kind += $val;
-        java_inner!(stmt { $($remaining)* });
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { ($kind:expr) -= $val:expr; $($remaining:tt)* }) => {
-        $kind -= java_inner!(expr { $val });
-        java_inner!(stmt { $($remaining)* });
+    (stmt($class:ident) { ($kind:expr) -= $val:expr; $($remaining:tt)* }) => {
+        $kind -= java_inner!(expr($class) { $val });
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { $name:ident++; $($remaining:tt)* }) => {
+    (stmt($class:ident) { $name:ident++; $($remaining:tt)* }) => {
         $name += 1;
-        java_inner!(stmt { $($remaining)* });
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { $name:ident--; $($remaining:tt)* }) => {
+    (stmt($class:ident) { $name:ident--; $($remaining:tt)* }) => {
         $name -= 1;
-        java_inner!(stmt { $($remaining)* });
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { $val:ident.$fn:ident($(($($var:tt)*)),*); $($remaining:tt)* }) => {
-        //java_inner!(stmt { ($val).$fn($(($var)),*); $($remaining)* });
-        $val::$fn($(java_inner!(expr { $($var)* })),*);
-        java_inner!(stmt { $($remaining)* });
+    (stmt($class:ident) { return ($($val:tt)*); $($remaining:tt)* }) => {
+        return java_inner!(expr($class) { $($val)* }) as _;
+        // Useless, but'll generate the nice "unused code" warning that
+        // actually applies here and isn't caused by the macro itself.
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { $val:ident.$fn:ident($($var:expr),*); $($remaining:tt)* }) => {
-        java_inner!(stmt { $val.$fn($(($var)),*); $($remaining)* });
+    (stmt($class:ident) { return $val:expr; $($remaining:tt)* }) => {
+        java_inner!(stmt($class) { return ($val); $($remaining)* });
     };
-    (stmt { break; $($remaining:tt)* }) => {
+    (stmt($class:ident) { break; $($remaining:tt)* }) => {
         break;
         // Useless, but'll generate the nice "unused code" warning that
         // actually applies here and isn't caused by the macro itself.
-        java_inner!(stmt { $($remaining)* });
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { for (($($pre:tt)*); ($($cond:tt)*); ($($post:tt)*)) {
+    (stmt($class:ident) { for (($($pre:tt)*); ($($cond:tt)*); ($($post:tt)*)) {
         $($inner:tt)*
     } $($remaining:tt)* }) => {
-        java_inner!(stmt { $($pre)* });
-        while java_inner!(expr { $($cond)* }) {
-            java_inner!(stmt { $($inner)* });
-            java_inner!(stmt { $($post)* });
+        java_inner!(stmt($class) { $($pre)* });
+        while java_inner!(expr($class) { $($cond)* }) {
+            java_inner!(stmt($class) { $($inner)* });
+            java_inner!(stmt($class) { $($post)* });
         }
-        java_inner!(stmt { $($remaining)* });
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { if ($($cond:tt)*) {
-        $($inner:tt)*
-    } $($remaining:tt)* }) => {
-        if java_inner!(expr { $($cond)* }) {
-            java_inner!(stmt { $($inner)* });
-        }
-        java_inner!(stmt { $($remaining)* });
+    (stmt($class:ident) { if ($($cond:tt)*) {
+        $($success:tt)*
+    } $(else if ($($elseif_cond:tt)*) {
+        $($elseif_success:tt)*
+    // Else is not optional but we can use * as a hack
+    })* $(else {
+        $($otherwise:tt)*
+    })*; $($remaining:tt)* }) => {
+        if java_inner!(expr($class) { $($cond)* }) {
+            java_inner!(stmt($class) { $($success)* });
+        } $(else if java_inner!(expr($class) { $($elseif_cond)* }) {
+            java_inner!(stmt($class) { $($elseif_success)* });
+        })* $(else {
+            java_inner!(stmt($class) { $($otherwise)* });
+        })*
+        java_inner!(stmt($class) { $($remaining)* });
     };
-    (stmt { switch($($search:tt)*) {
+    (stmt($class:ident) { switch($($search:tt)*) {
         $(case ($match:expr) {
             $($success:tt)*
         })*
@@ -151,48 +171,70 @@ macro_rules! java_inner {
         loop {
             #[allow(unused_assignments)]
             let mut fallthrough = false;
-            let search = java_inner!(expr { $($search)* });
+            let search = java_inner!(expr($class) { $($search)* });
 
             $(
                 if fallthrough || search == $match {
                     #[allow(unused_assignments)]
                     { fallthrough = true; }
-                    java_inner!(stmt { $($success)* });
+                    java_inner!(stmt($class) { $($success)* });
                 }
             )*
 
-            $(java_inner!(stmt { $($default)* });)*
+            $(java_inner!(stmt($class) { $($default)* });)*
             #[allow(unreachable_code)]
             { break; }
         }
-        java_inner!(stmt { $($remaining)* });
+        java_inner!(stmt($class) { $($remaining)* });
+    };
+    // Handle these last because they could be ambigious
+    (stmt($class:ident) { $val:ident.$fn:ident($(($($var:tt)*)),*); $($remaining:tt)* }) => {
+        $val::$fn($(java_inner!(expr($class) { $($var)* })),*);
+        java_inner!(stmt($class) { $($remaining)* });
+    };
+    (stmt($class:ident) { $val:ident.$fn:ident($($var:expr),*); $($remaining:tt)* }) => {
+        java_inner!(stmt($class) { $val.$fn($(($var)),*); $($remaining)* });
+    };
+    (stmt($class:ident) { $fn:ident($(($($var:tt)*)),*); $($remaining:tt)* }) => {
+        $class::$fn($(java_inner!(expr($class) { $($var)* })),*);
+        java_inner!(stmt($class) { $($remaining)* });
+    };
+    (stmt($class:ident) { $fn:ident($($var:expr),*); $($remaining:tt)* }) => {
+        java_inner!(stmt($class) { $fn($(($var)),*); $($remaining)* });
     };
 
-    (expr { $array:ident[$index:expr] }) => {{
+    (expr($class:ident) { $array:ident[$index:expr] }) => {{
         assert!($index >= 0);
         &mut $array[$index as usize]
     }};
-    (expr { $array:ident.length }) => {{
+    (expr($class:ident) { $array:ident.length }) => {{
         $array.len() as i32
     }};
-    (expr { ($($var1:tt)*) $(+ ($($var2:tt)*))+ }) => {{
+    (expr($class:ident) { ($($var1:tt)*) $(+ ($($var2:tt)*))+ }) => {{
         use jrust::*;
-        java_inner!(expr { $($var1)* })
-            $(.add(java_inner!(expr { $($var2)* })))*
+        java_inner!(expr($class) { $($var1)* })
+            $(.add(java_inner!(expr($class) { $($var2)* })))*
     }};
-    (expr { $var1:ident $op:tt $var2:ident }) => {{
-        java_inner!(expr { ($var1) $op ($var2) })
+    (expr($class:ident) { $var1:ident $op:tt $var2:ident }) => {{
+        java_inner!(expr($class) { ($var1) $op ($var2) })
     }};
-    (expr { ($($var1:tt)*) $op:tt ($($var2:tt)*) }) => {{
-        (java_inner!(expr { $($var1)* }) as i64) $op (java_inner!(expr { $($var2)* }) as i64)
+    (expr($class:ident) { ($($var1:tt)*) $op:tt ($($var2:tt)*) }) => {{
+        (java_inner!(expr($class) { $($var1)* }) as i64) $op (java_inner!(expr($class) { $($var2)* }) as i64)
     }};
-    (expr { new $class:ident($(($($var:tt)*)),*) }) => {{
-        &mut $class::new($(java_inner!(expr { $($var)* })),*)
+    (expr($_class:ident) { new $class:ident($(($($var:tt)*)),*) }) => {{
+        &mut $class::new($(java_inner!(expr($class) { $($var)* })),*)
     }};
-    (expr { new $class:ident($($var:expr),*) }) => {{
-        java_inner!(expr { new $class($(($var)),*) })
+    (expr($_class:ident) { new $class:ident($($var:expr),*) }) => {{
+        java_inner!(expr($class) { new $class($(($var)),*) })
     }};
-    (expr { $expr:expr }) => {{
+    // Handle these last because they could be ambigious
+    (expr($class:ident) { $fn:ident($(($($var:tt)*)),*) }) => {
+        $class::$fn($(java_inner!(expr($class) { $($var)* })),*);
+    };
+    (expr($class:ident) { $fn:ident($($var:expr),*) }) => {
+        java_inner!(expr($class) { $fn($(($var)),*) });
+    };
+    (expr($class:ident) { $expr:expr }) => {{
         $expr
     }};
 
