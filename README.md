@@ -16,3 +16,5 @@ invent a special safety door that won't kick you on the butt on the way out
 because *you are fired*."**
 
  - Cave Johnsson, Portal 2
+
+The whole idea of this project was invented by [@nilset](https://github.com/nilset).
