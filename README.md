@@ -47,9 +47,6 @@ Generated rust:
 *This can be inspected using [cargo-expand](https://github.com/dtolnay/cargo-expand)*
 
 ```Rust
-#[macro_use]
-extern crate jrust;
-
 #[derive(Clone, Debug, Default)]
 pub struct Value {
     val: i32,
@@ -66,12 +63,12 @@ impl Value {
 }
 impl Value {
     pub fn print(this: &mut Self) -> () {
-        println!("{}", this);
+        println!("{}", this.val);
     }
 }
 fn main() {
-    let mut value = Value::new(42);
-    Value::print(&mut value);
+    let mut value: &mut Value = &mut Value::new(42);
+    Value::print(value);
 }
 ```
 
