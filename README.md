@@ -6,7 +6,7 @@ This, my friends, is a Rust macro that parses Java-like syntax and runs it as a 
 
 **Warning: Very early release.** I just wanted to get a prototype working so I
 could reserve the name on crates.io.  Of course I'll work more on this very
-useful program later.
+useful library later.
 
 ## Why
 
